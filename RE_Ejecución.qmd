@@ -1,0 +1,207 @@
+---
+title: "Test"
+author: "Daniel Carrasco"
+format: html
+editor: visual
+---
+
+---
+format:
+  html:
+    page-layout: full
+    code-overflow: scroll
+    df-print: paged
+---
+
+## Proyecto Final Métodos y Herramientas de la investigación 1
+
+**Análisis estadístico poblacional sobre el efecto del gasto en publicidad sobre las ventas utilizando los datos de la Tabla 1 (Ventas-Publicidad.xlsx), que muestra el nivel de ventas de una población de 90 empresas condicional al gasto en publicidad**.
+
+Determine el valor esperado de las ventas y compare con el valor esperado de esta variable condicionada al gasto en publicidad
+
+LLamando paqueteria
+
+```{r}
+
+# install.packages("readxl")
+library(readxl)
+
+# install.packages("xlsx")
+library(xlsx)
+
+# install.packages("sampling")
+library(sampling)
+
+# install.packages("ggplot2")
+library(ggplot2)
+```
+
+Definimos el directorio en cual se guardará el archivo.
+
+```{r}
+setwd ("G:/Mi unidad/R ALL MEF/Final metodos 1/Ejecución R con formato tipo Jupiter")
+getwd()
+```
+
+Cargamos los datos que muestran los gastos en publicidad versus las ventas en millones.
+
+```{r}
+# Insertamos la tabla original
+VENTAS_PUBLICIDAD_MOD1 <- read_excel("Ventas-Publicidad.xlsx",sheet="Tabla_Mod_1")
+VENTAS_PUBLICIDAD_MOD1
+
+```
+
+Observamos que la tabla VENTAS_PUBLICIDAD_MOD1 nos entrega columnas de 10 a 19 millones, suponemos que es la inversión en publicidad, en las cuales se listan observaciones de números de ventas para diferentes empresas.
+
+Cargo la segunda tabla modificada y la formateo como dejo en data frame
+
+```{r}
+VENTAS_PUBLICIDAD_MOD2 <- read_excel("Ventas-Publicidad.xlsx",sheet="Tabla_Mod_2")
+VENTAS_PUBLICIDAD_MOD2 <- as.data.frame(VENTAS_PUBLICIDAD_MOD2)
+VENTAS_PUBLICIDAD_MOD2
+```
+
+Buen se observa que es la misma información, pero ordenada de una forma diferente, en 2 columnas.
+
+consulto las clases de ambas tablas cargadas
+
+```{r}
+class(VENTAS_PUBLICIDAD_MOD1)
+class(VENTAS_PUBLICIDAD_MOD2)
+```
+
+Se nos solicita determinar el valor esperado de las ventas y comparar con el valor esperado de esta variable condicionada al gasto en publicidad
+
+Valor esperado de ventas considerando el gasto en publicidad
+
+```{r}
+sapply(VENTAS_PUBLICIDAD_MOD1,mean)
+```
+
+El comando "sapply" nos permitio determinar las medias de las observaciones de cada columna, esto quiere decir que podemos decir por ejemplo: "Que el valor o la cantidad esperada de ventas si invertimoes 13 millones en publicidad es de 230955"
+
+```{r}
+sapply(VENTAS_PUBLICIDAD_MOD2,mean)
+```
+
+Al aplicar el "sapply" en la segunda tabla podemos obtener la media de la inversión en publicidad y la media de las ventas en general.
+
+Podemos obtener esto de una forma alternativa
+
+```{r}
+mean (VENTAS_PUBLICIDAD_MOD1$`10 Mill`)
+##
+colMeans(VENTAS_PUBLICIDAD_MOD1)
+```
+
+Es interesante este metodo dado a que vemos que la media de las venta con el comando anterior fue aproximada.
+
+Para observarlos de mejor forma y poder trabajar con las medias, creamos un dataframe con las medias entregadas y con un vector que represente los millones de inversión
+
+```{r}
+MEDIAS <- colMeans(VENTAS_PUBLICIDAD_MOD1)
+CLASES <- c(10,11, 12, 13, 14, 15, 16, 17, 18, 19 )
+
+BASE_MEDIAS_MILL	<- as.data.frame(cbind(MEDIAS,CLASES))
+
+BASE_MEDIAS_MILL
+```
+
+**Grafique la proyección lineal encontrada en la pregunta anterior**.
+
+```{r}
+plot(BASE_MEDIAS_MILL, col="blue", pch=19)
+```
+
+```{r}
+plot(BASE_MEDIAS_MILL, 
+     col="blue", 
+     pch=19, 
+     xlab="Ventas (mill)", 
+     ylab="inversion en publicidad (mill)", 
+     main="Inversion vs ventas",
+     type="l")
+     abline(lm(MEDIAS~CLASES,BASE_MEDIAS_MILL))
+```
+
+```{r}
+library(ggplot2)
+
+ggplot(BASE_MEDIAS_MILL, aes(x = CLASES, y = MEDIAS)) +
+  geom_point(color = "blue", size = 3) +
+  geom_smooth(method = "lm", se = FALSE, color = "darkred") +
+  labs(
+    title = "Inversión vs ventas",
+    x = "Ventas (mill)",
+    y = "Inversión en publicidad (mill)"
+  ) +
+  theme_minimal()
+```
+
+```{r}
+plot(MEDIAS~CLASES, 
+     col="red", 
+     pch=16, 
+     xlab="Ventas (mill)", 
+     ylab="inversion en publicidad (mill)", 
+     main="Inversion vs ventas")
+abline(lm(MEDIAS~CLASES),col="blue")
+```
+
+```{r}
+ggplot(BASE_MEDIAS_MILL, aes(x = CLASES, y = MEDIAS)) +
+  geom_point(color = "red", size = 3) +  # puntos rojos
+  geom_smooth(method = "lm", se = FALSE, color = "blue", linewidth = 1) +  # línea de regresión
+  labs(
+    title = "Inversión vs Ventas",
+    x = "Ventas (mill)",
+    y = "Inversión en publicidad (mill)"
+  ) +
+  theme_minimal(base_size = 14) +  # estilo limpio
+  theme(
+    plot.title = element_text(hjust = 0.5, face = "bold"),
+    axis.title = element_text(face = "bold")
+  )
+```
+
+***Como conclusión claramente vemos que existe una relación positiva la invertir en publicidad con el número de ventas.***
+
+**Modelamieno econometrico**
+
+Generar un modelo econométrico en el cual analice la relación mencionada en la pregunta anterior. ¿Por qué tiene sentido definir un error aleatorio? ¿Qué propiedades debería tener este error?
+
+Generamos una regesión lineal del data frame que creamos.
+
+```{r}
+REG_MILL_PUBLICIDAD 	<-	lm(MEDIAS~CLASES,BASE_MEDIAS_MILL)                      
+REG_MILL_PUBLICIDAD
+summary (REG_MILL_PUBLICIDAD)
+```
+
+Como se observa en el coeficiente de clases el cual representa los millones de inversión en publicidad es positivo, además con un p value bajo, por ende, es muy significativo.
+
+MEDIAS=−606,756+68,286×CLASES
+
+Ahora generamos la regresión lineal, con la tabla original.
+
+```{r}
+REG_MILL_PUBLICIDAD2 <-   lm(Ventas_Mill~Publicidad_Mill,VENTAS_PUBLICIDAD_MOD2) 
+REG_MILL_PUBLICIDAD2
+summary (REG_MILL_PUBLICIDAD2)
+```
+
+Se mantiene la conclusión.
+
+**Graficamos**
+
+```{r}
+plot(REG_MILL_PUBLICIDAD)
+```
+
+Por cada millón extra invertido en publicidad por parte de las empresas encuestadas las ventas aumentan en promedio 68.286 millones. Tal como lo muestra la regresión planteada la variable inversión en publicidad si es estadísticamente relevante para explicar la cantidad de venta, esto con un nivel de certeza del 95%
+
+**¿Por qué tiene sentido definir un error aleatorio?**
+
+\
+**Resp:** Tiene sentido definir un nivel de validación de error aleatorio, debido a que, cuando se estudian datos de corte transversal obtenidos de muestra aleatoria, es muy probable que algunos valores se presenten variaciones significativas con respecto a la media de la población, definir un nivel de confianza del 95% por ejemplo nos permite indicar que con un 95% de certeza la estimación encontrada representará la población estudiada, pero existe un 5% que puede no estar representada por la estimación.
