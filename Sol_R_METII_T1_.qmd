@@ -1,0 +1,335 @@
+---
+title: "MetII_T1_MEF"
+author: "Daniel Carrasco"
+format: pdf
+prefer-html: true
+editor: visual
+---
+
+```{r}
+# Defino mi la ruta de mi archivo
+setwd("G:/Mi unidad/R a Python Proy. MEF/Tarea Met II/Sol en R T1")
+getwd()
+```
+
+```{r}
+# Cargo la CASEN
+load("CASEN2013.RData")
+
+```
+
+## Análisis de exploratorio para escolaridad de encuesta CASEN 2013
+
+-   Usando la CASEN 2013, crearemos un data.frame llamado “edadEscolaridad” con las siguientes variables: "folio", "o", "pco1", "region", "sexo", "expr", "edad", "ESC".
+
+-   Debemos definir cada una de las varibles con rigurosidad.
+
+```{r}
+# comprobar que las variables existen en data00
+a <- which(names(data00)%in%c( "folio", "o", 
+                          "pco1", "region", 
+                          "sexo", "expr",
+                          "edad", "ESC"))
+
+names(data00[a])
+```
+
+```{r}
+#crear dataframe
+
+edadEscolaridad <- data00[c( "folio", "o", 
+                               "pco1", "region",
+                               "sexo", "expr",
+                               "edad", "ESC")]
+summary(edadEscolaridad)
+```
+
+Como ya tenemos el data frame buscado, podemos eliminar los datos originales para mejorar el procesamiento.
+
+```{r}
+rm(data00) #rm = remove, permite eliminar objetos
+```
+
+Definimos cada una de las variables
+
+-   o = Numero de orden de la persona dentro del hogar.
+
+-   folio = Identificación del hogar.
+
+-   region = Región
+
+    -   1 I: Tarapaca
+
+    -   2 II: Antofagasta
+
+    -   3 III: Atacama
+
+    -   4 IV: Coquimbo
+
+    -   5 V: Valparaíso
+
+    -   6 VI: Libertador General Bernardo O'Higgins
+
+    -   7 VII: Maule
+
+    -   8 VIII: Bío Bío
+
+    -   9 IX: La Araucanía
+
+    -   10 X: Los Lagos
+
+    -   11 XI: Aysén del General Carlos Ibáñez del Campo
+
+    -   12 XII: Magallanes y de la Antírtica Chilena
+
+    -   13 R.M.: Metropolitana de Santiago
+
+    -   14 XIV: Los Ríos
+
+    -   15 XV: Arica y Parinacota
+
+-   pco1 = Parentesco con el jefe de hogar
+
+    -   1 Jefe(a) de hogar
+
+    -   2 Esposo(a) o pareja
+
+    -   3 Hijo(a) de ambos
+
+    -   4 Hijo(a) sólo del jefe
+
+    -   5 Hijo(a) sólo del esposo(a) o pareja
+
+    -   6 Padre o madre
+
+    -   7 Suegro(a)
+
+    -   8 Yerno o nuera
+
+    -   9 Nieto(a)
+
+    -   10 Hermano(a)
+
+    -   11 Cuñado(a)
+
+    -   12 Otro familiar
+
+    -   13 No familiar
+
+    -   14 Servicio doméstico puertas adentro
+
+-   sexo
+
+    -   1 hombre
+
+    -   2 mujer
+
+-   expr = expanasión regional
+
+-   edad = edad
+
+-   ESC = escolaridad nivel de educación
+
+**Usando la función “apply”, calcularemos el promedio para edad y escolaridad de los/as jefes/as de hogar solamente y sin remover los NA.**
+
+-   Utilizaremos el comando Apply para derermina la media sobre todo el data frame filtrado por la condición indicada
+
+-   con el "which" filtramos el data frame seleccionando solo las que tengan el atributo de jefe de hogar (pco1 = 1)
+
+-   De ese filtro generado tomamos las columnas "edad" y "ESC" y le aplicamos la media
+
+```{r}
+apply(edadEscolaridad[which(edadEscolaridad$pco1==1),c("edad","ESC")],2,mean)
+```
+
+Como observamos para la columna escolaridad nos dio un resultado "NA".
+
+Esto es debido a que la aplicación de la media en la columna no se ejecutó correctamente, el error basicamentes es por que en la columnas existes valores NA, de los cuales no se puede determinar una media
+
+**Con la misma función determinaremos las medias quitandos los NAs**
+
+```{r}
+apply(edadEscolaridad[which(edadEscolaridad$pco1==1),c("edad","ESC")],2,mean, na.rm=TRUE)
+```
+
+El comando "na.rm" remueve los NA de las columnas indicadas
+
+Con esto hemos quitado las filas en las cuales habia un NA en uno de las dos columnas.
+
+Con esto sabemos que la edad promedio de escolaridad de los jefes de hogar es de 9,6 años. Una posible conclusión podria ser que en el 2013 los jefes de hogar en Chile tenia en promedio la ensañanza basica completa.
+
+## Función Apply
+
+La función `apply()` en R se utiliza para **realizar operaciones repetitivas** sobre las **filas o columnas** de una **matriz** o un `data.frame` numérico. Es una forma eficiente de aplicar una función (como promedio, suma, máximo, etc.) sin necesidad de usar bucles (`for`, `while`, etc.).
+
+## Función Tapply
+
+La función `tapply()` en R se utiliza para **aplicar una función a subconjuntos de un vector**, definidos por una o más variables categóricas (factores). Es ideal para **hacer resúmenes agrupados**, como calcular promedios, sumas o conteos por grupo.
+
+Usaremos la función Tapply para determinar el promedio de años de edad para cada región
+
+```{r}
+tapply(edadEscolaridad$edad, edadEscolaridad$region, mean)
+```
+
+![](images/clipboard-3037678712.png){width="632"}
+
+Ahora determinaremos el promedio de años de escolaridad por región utilizando la misma función
+
+```{r}
+tapply(edadEscolaridad$ESC, edadEscolaridad$region, mean)
+```
+
+Como se observa todas las regiones poseen datos perdidos o NAs, removeremos estos registros.
+
+```{r}
+as.data.frame.table(
+  tapply
+  (edadEscolaridad$ESC,edadEscolaridad$region, mean, na.rm=TRUE))
+```
+
+*Opción grafica diferente*
+
+```{r}
+library(DT)
+
+DT::datatable(
+  as.data.frame.table(
+    tapply(edadEscolaridad$ESC,
+           INDEX = edadEscolaridad[c("sexo", "region")],
+           mean,
+           na.rm = TRUE)
+  ),
+  options = list(pageLength = 20),
+  caption = "Promedio de escolaridad por sexo y región"
+)
+```
+
+Utilizando la misma función determinaremos los años promedios de escolaridad para cada región aperturando por sexo.
+
+```{r}
+as.data.frame.table(tapply(
+  edadEscolaridad$ESC,INDEX =  edadEscolaridad[c("sexo","region")], mean, 
+  na.rm=TRUE))
+```
+
+*Hint: explicación del comando*
+
+-   *edadEscolaridad\$ESC : Es el **vector numérico** al que se le aplicará la función `mean` (el nivel de escolaridad)*
+
+-   *INDEX = edadEscolaridad\[c("sexo", "region")\] : Define los **grupos** por los cuales se quiere agrupar, en este caso, combinando las columnas `sexo` y `region`*
+
+-   *mean : Es la **función** que se aplicará a cada grupo*
+
+```{r}
+as.data.frame.table(
+  tapply(edadEscolaridad$ESC,
+         INDEX = list(sexo = factor(edadEscolaridad$sexo, levels = c(1, 2), labels = c("Hombre", "Mujer")),
+                      region = edadEscolaridad$region),
+         mean,
+         na.rm = TRUE)
+)
+```
+
+Como podemos determinar en que región existe mayor brecha de escolaridad?
+
+```{r}
+which.max(
+  abs(
+    tapply(edadEscolaridad$ESC,INDEX =  edadEscolaridad[c("sexo","region")], mean, na.rm=TRUE)[1,]-
+  tapply(edadEscolaridad$ESC,INDEX =  edadEscolaridad[c("sexo","region")], mean, na.rm=TRUE)[2,]  
+))
+```
+
+***Hint: explicación del comando***
+
+-   *tapply(...)\[1,\]:*
+
+    -   *Calcula el **promedio de escolaridad** (`ESC`) para **sexo 1** (hombres), por región.*
+
+    -   *Devuelve una **fila con un valor promedio por cada región**.*
+
+-   tapply(...)\[2,\] : *Hace lo mismo que el anterior pero para las mujeres*
+
+-   *\[1,\] - \[2,\] : Esto calcula la **diferencia en escolaridad entre hombres y mujeres** para cada región.*
+
+-   *abs(...) : Aplica el valor absoluto a cada diferencia. Así se ignora si la diferencia es a favor de hombres o mujeres, y se enfoca solo en **la magnitud de la brecha***
+
+-   *which.max(...) : Devuelve el **índice (posición)** de la región donde la **diferencia absoluta entre hombres y mujeres es mayor**.*
+
+## Usando datos expandidos
+
+Se solicita crear un dataframe llamado "edadEscolaridad pco1" el cual incluye solamente al grupo de jefes de hogar, además de considerar igualmente las columnas solicitadas en el primer ejercicio.
+
+```{r}
+edadEscolaridadpc1 <- edadEscolaridad[which(edadEscolaridad$pco1==1),]
+```
+
+Ahora se solicita lo siguiente "Usando la función “apply”, “tapply” y “weighted.mean” en conjunto, calcule el promedio para edad y escolaridad removiendo los NA por región. Debe crear/usar una función propia para lograr esto. Guarde los resultados en un objeto llamado "edadYEscPorRegExp""
+
+```{r}
+edadYEscPorRegExp <- apply(edadEscolaridadpc1[c("edad","ESC")],2,
+      function(x){ ind <- seq(along=x)   
+      tapply(ind,INDEX = edadEscolaridadpc1$region,
+             function(i) weighted.mean(x[i],edadEscolaridadpc1$expr[i],na.rm = T)
+      )}  
+       
+)
+edadYEscPorRegExp
+```
+
+***Hint: explicación del comando***
+
+-   *apply(..., 2, function(x) {...}) :*
+
+    -   *`apply()` se usa para aplicar una función sobre **las columnas** (`MARGIN = 2`) de un data frame o matriz. En este caso se está aplicando sobre las columnas `"edad"` y `"ESC"` del data frame `edadEscolaridadpc1`.*
+
+-   *function(x) :*
+
+    -   *La función interna toma una columna (`x`), que puede ser `"edad"` o `"ESC"` según el momento.*
+
+-   ind \<- seq(along = x) :
+
+    -   Crea un índice secuencial: `1:length(x)`, necesario para aplicar `tapply` correctamente.
+
+-   tapply(ind, INDEX = edadEscolaridadpc1\$region, ...) :
+
+    -   Agrupa los datos por región (`region`), y aplica una función a cada grupo.
+
+    -   Dentro de cada grupo (`i`), calcula un **promedio ponderado** de los valores `x[i]`.
+
+-   weighted.mean(x\[i\], edadEscolaridadpc1\$expr\[i\], na.rm = TRUE) :
+
+    -   Aquí se calcula el promedio ponderado de los valores `x[i]` (edad o escolaridad), usando como **peso** la columna `expr[i]`.
+
+![](images/clipboard-4249191769.png){width="699"}
+
+Generamos un grafico de dispersión
+
+```{r}
+plot(edadYEscPorRegExp, ylim=c(8,12), 
+     main = c("Escolaridad y edad","promedio de jefes/as de hogar por regi?n"),
+     xlab = "Edad promedio", ylab = "Escolaridad promedio")
+
+text(edadYEscPorRegExp[,1],edadYEscPorRegExp[,2],
+     labels = row.names(edadYEscPorRegExp) ,
+     cex = .7,adj = c(0,0),pos = 1, font = 2)
+```
+
+```{r}
+plot(edadYEscPorRegExp, ylim=c(8,12), 
+     main = c("Escolaridad y edad","promedio de jefes/as de hogar por regi?n"),
+     xlab = "Edad promedio", ylab = "Escolaridad promedio",
+col="red", pch= 19,col.lab="blue",font.lab=3,font.main=
+15)
+   
+text(edadYEscPorRegExp[,1],edadYEscPorRegExp[,2],
+     labels = row.names(edadYEscPorRegExp) ,
+     cex = .7,adj = c(0,0),pos = 1, font = 2)
+
+legend(54.8,12.145,c("1:I", "2:II", "3:III", "4:IV",
+            "5:V", "6:VI", "7:VII", "8:VIII", 
+            "9:IX", "10:X", "11:XI", "13:R.M", 
+            "14:XIV", "15:XV"),title = "Regiones",cex = .6,
+       box.col = "azure3")
+```
